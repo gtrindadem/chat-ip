@@ -12,43 +12,83 @@
 <body>
     <h1>CHAT</h1>
 
-    <form id="chat">
-        <input type="text" name="usuario" placeholder="Digite seu usuário" />
-        <div class="messages"></div>
-        <input type="text" name="mensagem" placeholder="Digite sua mensagem" />
-        <button type="submit">Enviar</button>
-    </form>
+    <input type="text" name="usuario" placeholder="Digite seu usuário" />
+    <button id="btnSalvarUsuario">OK</button>
+
+    <input type="text" name="primeiraMensagem" placeholder="Digite a primeira mensagem" />
+    <button id="btnNovaThread">Criar nova Thread</button>
+
+    <div class="threads"></div>
 
     <script>
         const socket = io();
 
-        const imprimeMensagem = (pacoteMensagem) => {
-            $('.messages').append(`<div class="message"><strong>${pacoteMensagem.dataHora} ${pacoteMensagem.autor}</strong>: ${pacoteMensagem.mensagem}</div>`);
-        };
+        const inputUsuario = $('input[name=usuario]');
+        const inputNovaThread = $('input[name=primeiraMensagem]');
+        const divThreads = $('.threads');
+        let contadorThreads = 0;
+        let usuario = '';
 
-        const getDataHora = () => {
-            const data = new Date();
-            return `${data.toLocaleDateString('pt-br')} - ${data.getHours()}:${data.getMinutes()}`;
-        };
-
-        $('#chat').submit((event) => {
-            event.preventDefault();
-
-            const autor = $('input[name=usuario]').val();
-            const mensagem = $('input[name=mensagem]').val();
-
-            if (autor.length && mensagem.length) {
-                const pacoteMensagem = {
-                    dataHora: getDataHora(),
-                    autor: autor,
-                    mensagem: mensagem
-                }
-
-                socket.emit('novaMensagem', pacoteMensagem);
-
-                imprimeMensagem(pacoteMensagem);
-            }
+        $('#btnSalvarUsuario').on('click', () => {
+            inputUsuario.prop('disabled', true);
+            usuario = inputUsuario.val();
+            $('#btnSalvarUsuario').remove();
         });
+
+        const imprimeMensagem = (pacoteMensagem) => {
+            $(`form[id=${pacoteMensagem.thread}] > div.mensagensThread`).append(`<div class="mensagem"><strong>${pacoteMensagem.hora} - ${pacoteMensagem.usuario}</strong>: ${pacoteMensagem.mensagem}</div>`);
+        };
+
+        const geraNovaMensagem = (inputTexto, thread) => {
+            if (usuario.length && inputTexto.val().length) {
+                    const pacoteMensagem = {
+                        thread: thread,
+                        hora: getHora(),
+                        usuario: usuario,
+                        mensagem: inputTexto.val()
+                    }
+
+                    socket.emit('novaMensagem', pacoteMensagem);
+
+                    imprimeMensagem(pacoteMensagem);
+                    inputTexto.val('');
+                }
+        }
+
+        const criaSubmitListener = (contadorThreads) => {
+            $(`form[id=thread${contadorThreads}]`).submit((event) => {
+                event.preventDefault();
+
+                const mensagem = $(`form[id=${event.target.id}] > input[name=novaMensagem]`)
+
+                geraNovaMensagem(mensagem, event.target.id);
+            })
+        };
+
+        $('#btnNovaThread').on('click', () => {
+            if(!inputNovaThread.val().length || !usuario.length){
+                return false;
+            }
+            contadorThreads++;
+            divThreads.append(`
+                <div class="thread">
+                    <form id="thread${contadorThreads}">
+                        <label>Thread ${contadorThreads}</label>
+                        <div class="mensagensThread"></div>
+                        <input type="text" name="novaMensagem" />
+                    </form>
+                <div>    
+            `);
+            
+            criaSubmitListener(contadorThreads);
+            geraNovaMensagem(inputNovaThread, `thread${contadorThreads}`);
+        });
+
+        const getHora = () => {
+            const data = new Date();
+            return `${data.toLocaleTimeString('pt-br', {timeStyle: 'short'})}`;
+        };
+        
     </script>
 </body>
 </html>
