@@ -5,20 +5,38 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CHAT - Secretaria de Estado do Meio Ambiente</title>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
 </head>
 <body>
     <h1>CHAT</h1>
 
-    <form>
-        <input type="text" name="username" placeholder="Digite seu usuário" />
+    <form id="chat">
+        <input type="text" name="usuario" placeholder="Digite seu usuário" />
         <div class="messages"></div>
-        <input type="text" name="message" placeholder="Digite sua mensagem" />
+        <input type="text" name="mensagem" placeholder="Digite sua mensagem" />
         <button type="submit">Enviar</button>
     </form>
 
-    <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
+
+        $('#chat').submit((event) => {
+            event.preventDefault();
+
+            const autor = $('input[name=usuario]').val();
+            const mensagem = $('input[name=mensagem]').val();
+
+            if (autor.length && mensagem.length) {
+                const pacoteMensagem = {
+                    autor: autor,
+                    mensagem: mensagem
+                }
+
+                socket.emit('novaMensagem', pacoteMensagem);
+            }
+        });
     </script>
 </body>
 </html>

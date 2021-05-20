@@ -13,6 +13,10 @@ app.get('/', (req, res) => {
 
 io.on('connection', (socket) => {
     console.log('Socket conectado: ' + socket.id);
+
+    socket.on('novaMensagem', (pacoteMensagem) => {
+        console.log(pacoteMensagem);
+    });
 });
 
 server.listen(3000, () => {
