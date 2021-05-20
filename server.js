@@ -11,11 +11,13 @@ app.get('/', (req, res) => {
     res.render('index.html');
 });
 
+let mensagens = [];
+
 io.on('connection', (socket) => {
     console.log('Socket conectado: ' + socket.id);
 
     socket.on('novaMensagem', (pacoteMensagem) => {
-        console.log(pacoteMensagem);
+        mensagens.push(pacoteMensagem);
     });
 });
 

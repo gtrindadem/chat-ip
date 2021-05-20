@@ -22,6 +22,15 @@
     <script>
         const socket = io();
 
+        const imprimeMensagem = (pacoteMensagem) => {
+            $('.messages').append(`<div class="message"><strong>${pacoteMensagem.dataHora} ${pacoteMensagem.autor}</strong>: ${pacoteMensagem.mensagem}</div>`);
+        };
+
+        const getDataHora = () => {
+            const data = new Date();
+            return `${data.toLocaleDateString('pt-br')} - ${data.getHours()}:${data.getMinutes()}`;
+        };
+
         $('#chat').submit((event) => {
             event.preventDefault();
 
@@ -30,11 +39,14 @@
 
             if (autor.length && mensagem.length) {
                 const pacoteMensagem = {
+                    dataHora: getDataHora(),
                     autor: autor,
                     mensagem: mensagem
                 }
 
                 socket.emit('novaMensagem', pacoteMensagem);
+
+                imprimeMensagem(pacoteMensagem);
             }
         });
     </script>
