@@ -26,69 +26,104 @@
         const inputUsuario = $('input[name=usuario]');
         const inputNovaThread = $('input[name=primeiraMensagem]');
         const divThreads = $('.threads');
-        let contadorThreads = 0;
+        let threadIdAtual = 0;
         let usuario = '';
 
-        $('#btnSalvarUsuario').on('click', () => {
-            inputUsuario.prop('disabled', true);
-            usuario = inputUsuario.val();
-            $('#btnSalvarUsuario').remove();
+        const imprimeMensagem = (pacoteMensagem) => {
+            $(`.mensagensThread${pacoteMensagem.threadId}`)
+                .append(`
+                    <div class="mensagem">
+                        <strong>${pacoteMensagem.hora} - ${pacoteMensagem.usuario}</strong>: ${pacoteMensagem.mensagem}
+                    </div>`
+                );
+        };
+
+        socket.on('mensagensAnteriores', (pacotesMensagem) => {
+            for (pacoteMensagem of pacotesMensagem) {
+                imprimeMensagem(pacoteMensagem);
+            }
         });
 
-        const imprimeMensagem = (pacoteMensagem) => {
-            $(`form[id=${pacoteMensagem.thread}] > div.mensagensThread`).append(`<div class="mensagem"><strong>${pacoteMensagem.hora} - ${pacoteMensagem.usuario}</strong>: ${pacoteMensagem.mensagem}</div>`);
-        };
+        socket.on('threadsAnteriores', (threadsId) => {
+            threadIdAtual = threadsId.length;
+            for (threadId of threadsId) {
+                criaThread(threadId);
+            }
+        });
 
-        const geraNovaMensagem = (inputTexto, thread) => {
-            if (usuario.length && inputTexto.val().length) {
-                    const pacoteMensagem = {
-                        thread: thread,
-                        hora: getHora(),
-                        usuario: usuario,
-                        mensagem: inputTexto.val()
-                    }
+        socket.on('mensagemRecebida', (pacoteNovaMensagem) => {
+            imprimeMensagem(pacoteNovaMensagem);
+        });
 
-                    socket.emit('novaMensagem', pacoteMensagem);
+        socket.on('threadRecebida', (threadId) => {
+            threadIdAtual = threadId;
+            criaThread(threadIdAtual);
+        });
 
-                    imprimeMensagem(pacoteMensagem);
-                    inputTexto.val('');
-                }
-        }
-
-        const criaSubmitListener = (contadorThreads) => {
-            $(`form[id=thread${contadorThreads}]`).submit((event) => {
-                event.preventDefault();
-
-                const mensagem = $(`form[id=${event.target.id}] > input[name=novaMensagem]`)
-
-                geraNovaMensagem(mensagem, event.target.id);
-            })
-        };
+        
 
         $('#btnNovaThread').on('click', () => {
             if(!inputNovaThread.val().length || !usuario.length){
                 return false;
             }
-            contadorThreads++;
+
+            threadIdAtual++
+            criaThread(threadIdAtual);
+            socket.emit('novaThread', threadIdAtual);
+
+            const pacotePrimeiraMensagem = geraPacoteMensagem(usuario, threadIdAtual, inputNovaThread.val());
+            imprimeMensagem(pacotePrimeiraMensagem);
+            socket.emit('novaMensagem', pacotePrimeiraMensagem);
+            inputNovaThread.val('');
+        });
+
+        const criaThread = (threadId) => {
             divThreads.append(`
                 <div class="thread">
-                    <form id="thread${contadorThreads}">
-                        <label>Thread ${contadorThreads}</label>
-                        <div class="mensagensThread"></div>
+                    <form id="Thread${threadId}">
+                        <label>Thread ${threadId}</label>
+                        <div class="mensagensThread${threadId}"></div>
                         <input type="text" name="novaMensagem" />
                     </form>
-                <div>    
+                <div>
             `);
-            
-            criaSubmitListener(contadorThreads);
-            geraNovaMensagem(inputNovaThread, `thread${contadorThreads}`);
-        });
+
+            criaSubmitListener(threadId);
+        };
+
+        const criaSubmitListener = (threadId) => {
+            $(`form[id=Thread${threadId}]`).submit((event) => {
+                event.preventDefault();
+
+                const inputNovaMensagem = $(`form[id=Thread${threadId}] > input[name=novaMensagem]`);
+
+                const pacoteNovaMensagem = geraPacoteMensagem(usuario, threadId, inputNovaMensagem.val());
+                imprimeMensagem(pacoteNovaMensagem);
+                socket.emit('novaMensagem', pacoteNovaMensagem);
+                inputNovaMensagem.val('');
+            })
+        };
+
+        const geraPacoteMensagem = (usuario, threadId, mensagem) => {
+            return {
+                usuario: usuario,
+                threadId: threadId,
+                mensagem: mensagem,
+                hora: getHora()
+            }
+        }
 
         const getHora = () => {
             const data = new Date();
             return `${data.toLocaleTimeString('pt-br', {timeStyle: 'short'})}`;
         };
         
+        $('#btnSalvarUsuario').on('click', () => {
+            inputUsuario.prop('disabled', true);
+            usuario = inputUsuario.val();
+            $('#btnSalvarUsuario').remove();
+        });
+
     </script>
 </body>
 </html>

@@ -12,12 +12,22 @@ app.get('/', (req, res) => {
 });
 
 let mensagens = [];
+let threads = [];
 
 io.on('connection', (socket) => {
     console.log('Socket conectado: ' + socket.id);
 
+    socket.emit('threadsAnteriores', threads);
+    socket.emit('mensagensAnteriores', mensagens);
+
     socket.on('novaMensagem', (pacoteMensagem) => {
         mensagens.push(pacoteMensagem);
+        socket.broadcast.emit('mensagemRecebida', pacoteMensagem);
+    });
+
+    socket.on('novaThread', (threadId) => {
+        threads.push(threadId);
+        socket.broadcast.emit('threadRecebida', threadId);
     });
 });
 
