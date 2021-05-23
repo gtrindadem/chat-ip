@@ -91,6 +91,7 @@
             imprimeMensagem(pacotePrimeiraMensagem);
             socket.emit('novaMensagem', pacotePrimeiraMensagem);
             inputNovaThread.val('');
+            $('.threads').scrollTop($('.threads').prop('scrollHeight'));
         });
 
         const criaThread = (threadId) => {
