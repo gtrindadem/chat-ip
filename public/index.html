@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -8,17 +8,28 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>CHAT</h1>
+    <div class="content">
 
-    <input type="text" name="usuario" placeholder="Digite seu usuário" />
-    <button id="btnSalvarUsuario">OK</button>
+        <h1>CHAT</h1>
 
-    <input type="text" name="primeiraMensagem" placeholder="Digite a primeira mensagem" />
-    <button id="btnNovaThread">Criar nova Thread</button>
+        <div class="identificacao">
+            <input type="text" name="usuario" placeholder="Digite seu usuário" />
+            <button id="btnSalvarUsuario">OK</button> <span style="color: red;">&nbsp;&nbsp;Para conseguir mandar mensagens e criar novas threads você precisa estar identificado</span>
+        </div>
 
-    <div class="threads"></div>
+        <div class="slide"></div>
+        <div class="threads"></div>
+
+        <div class="novaThread">
+            <input type="text" name="primeiraMensagem" placeholder="Digite a primeira mensagem..." />
+            <button id="btnNovaThread">+ CRIAR NOVA THREAD</button>
+        </div>
+
+    </div>
 
     <script>
         const socket = io();
@@ -30,25 +41,32 @@
         let usuario = '';
 
         const imprimeMensagem = (pacoteMensagem) => {
-            $(`.mensagensThread${pacoteMensagem.threadId}`)
+            if(!pacoteMensagem.mensagem || !pacoteMensagem.usuario.length){
+                return false;
+            }
+
+            const divMensagens = $(`.mensagensThread${pacoteMensagem.threadId}`);
+            divMensagens
                 .append(`
                     <div class="mensagem">
-                        <strong>${pacoteMensagem.hora} - ${pacoteMensagem.usuario}</strong>: ${pacoteMensagem.mensagem}
+                        <strong style="color: #00285c">${pacoteMensagem.hora} - ${pacoteMensagem.usuario}</strong>: ${pacoteMensagem.mensagem}
                     </div>`
                 );
+
+            divMensagens.scrollTop(divMensagens.prop('scrollHeight'));
         };
 
         socket.on('mensagensAnteriores', (pacotesMensagem) => {
-            for (pacoteMensagem of pacotesMensagem) {
+            pacotesMensagem.forEach((pacoteMensagem) => {
                 imprimeMensagem(pacoteMensagem);
-            }
+            });
         });
 
         socket.on('threadsAnteriores', (threadsId) => {
             threadIdAtual = threadsId.length;
-            for (threadId of threadsId) {
+            threadsId.forEach((threadId) => {
                 criaThread(threadId);
-            }
+            });
         });
 
         socket.on('mensagemRecebida', (pacoteNovaMensagem) => {
@@ -59,8 +77,6 @@
             threadIdAtual = threadId;
             criaThread(threadIdAtual);
         });
-
-        
 
         $('#btnNovaThread').on('click', () => {
             if(!inputNovaThread.val().length || !usuario.length){
@@ -80,10 +96,12 @@
         const criaThread = (threadId) => {
             divThreads.append(`
                 <div class="thread">
-                    <form id="Thread${threadId}">
-                        <label>Thread ${threadId}</label>
-                        <div class="mensagensThread${threadId}"></div>
-                        <input type="text" name="novaMensagem" />
+                    <form id="Thread${threadId}"">
+                        <div class="mensagensThread mensagensThread${threadId}"></div>
+                        <div class="inputAreaThread">
+                            <textarea name="novaMensagem" class="novaMensagem" /></textarea>
+                            <button type="submit" class="novaMensagem">ENVIAR</button>
+                        </div>
                     </form>
                 <div>
             `);
@@ -92,16 +110,26 @@
         };
 
         const criaSubmitListener = (threadId) => {
-            $(`form[id=Thread${threadId}]`).submit((event) => {
+            const form = $(`form[id=Thread${threadId}]`);
+            form.submit((event) => {
                 event.preventDefault();
 
-                const inputNovaMensagem = $(`form[id=Thread${threadId}] > input[name=novaMensagem]`);
+                const inputNovaMensagem = $(`form[id=Thread${threadId}] > div.inputAreaThread > textarea[name=novaMensagem]`);
 
-                const pacoteNovaMensagem = geraPacoteMensagem(usuario, threadId, inputNovaMensagem.val());
+                const pacoteNovaMensagem = geraPacoteMensagem(usuario, threadId, inputNovaMensagem.val().replace(/\r\n|\r|\n/g,"</br>"));
                 imprimeMensagem(pacoteNovaMensagem);
                 socket.emit('novaMensagem', pacoteNovaMensagem);
                 inputNovaMensagem.val('');
             })
+
+            $("textarea").keydown(function(e){
+                // Enter foi pressionado sem o shift
+                if (e.key == 'Enter' && !e.shiftKey)
+                {
+                    e.preventDefault();
+                    form.submit();
+                }
+            });
         };
 
         const geraPacoteMensagem = (usuario, threadId, mensagem) => {
@@ -122,6 +150,7 @@
             inputUsuario.prop('disabled', true);
             usuario = inputUsuario.val();
             $('#btnSalvarUsuario').remove();
+            $('span').remove();
         });
 
     </script>
