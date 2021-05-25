@@ -6,10 +6,9 @@ const io = require('socket.io')(server);
 
 app.use(express.static(__dirname + '/public'));
 app.set('views', __dirname + "/public");
-app.engine('html', require('ejs').renderFile);
 
 app.get('/', (req, res) => {
-    res.render('index.html');
+    res.sendFile('index.html');
 });
 
 let mensagens = [];
