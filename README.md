@@ -1,3 +1,3 @@
 # chat-ip
 
-Projeto estudantil apenas com intuito educadional.
+Projeto estudantil apenas com intuito educacional.
